@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -12,6 +13,11 @@ import (
 func Workflow(ctx workflow.Context, name string) (string, error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval: time.Second,
+			BackoffCoefficient: 2,
+			MaximumAttempts: 3,
+		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
