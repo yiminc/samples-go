@@ -98,7 +98,8 @@ func (dc *CryptDataConverter) ToPayload(value interface{}) (*commonpb.Payload, e
 			return nil, fmt.Errorf("%w: %v", converter.ErrUnableToEncode, err)
 		}
 
-		payload.Data = cryptData
+		copy := &commonpb.Payload{Metadata: payload.Metadata, Data: cryptData}
+		return copy, nil
 	}
 
 	return payload, nil
@@ -123,9 +124,8 @@ func (dc *CryptDataConverter) FromPayload(payload *commonpb.Payload, valuePtr in
 		return fmt.Errorf("%w: %v", converter.ErrUnableToDecode, err)
 	}
 
-	payload.Data = decryptData
-
-	return dc.dataConverter.FromPayload(payload, valuePtr)
+	copy := &commonpb.Payload{Metadata: payload.Metadata, Data: decryptData}
+	return dc.dataConverter.FromPayload(copy, valuePtr)
 }
 
 // ToStrings converts payloads object into human readable strings.
@@ -141,10 +141,9 @@ func (dc *CryptDataConverter) ToStrings(payloads *commonpb.Payloads) []string {
 // ToString converts payload object into human readable string.
 func (dc *CryptDataConverter) ToString(payload *commonpb.Payload) string {
 	decryptData, err := decrypt(payload.GetData(), dc.getKey())
-	// No way to return an error here...
-	if err == nil {
-		payload.Data = decryptData
+	if err != nil {
+		return fmt.Sprintf("failed to decrypt: %v", err)
 	}
 
-	return dc.dataConverter.ToString(payload)
+	return dc.dataConverter.ToString(&commonpb.Payload{Metadata: payload.Metadata, Data: decryptData})
 }
